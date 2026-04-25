@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { sounds } from "./sounds";
 import char1 from "./assets/char1.png";
 import char2 from "./assets/char2.png";
 import char3 from "./assets/char3.png";
-import bgVideo from "./assets/main3.mp4";
+import bgVideo from "./assets/main2.mp4";
 import newsign from "./assets/newsign.png";
 import icon1 from "./assets/icon1.png";
 import icon2 from "./assets/icon2.png";
@@ -19,37 +19,36 @@ const ROLES = [
 
 const ITEMS = [
   {
-    id: "twitch", label: "TWITCH", handle: "@yourname", href: "https://twitch.tv/yourname", icon: "🎮", barIcon: icon1, bars: 1, newBars: [0], counts: ["56"],
-    links: ["twitch.tv/videos/2041837265"],
+    id: "linkedin", label: "LINKEDIN", handle: "@qussai-albalkhi", href: "https://www.linkedin.com/in/qussai-albalkhi/", icon: "💼", barIcon: icon1, bars: 1, newBars: [0], counts: ["VIEW"],
+    links: ["linkedin.com/in/qussai-albalkhi"],
     stats: [
-      { tag: "FOL", value: "1.2K", color: "#9147ff" },
-      { tag: "VWR", value: "042",  color: "#bf94ff" },
+      { tag: "NET", value: "OPEN", color: "#0a66c2" },
+      { tag: "LOC", value: "GTA",  color: "#70b5f9" },
     ],
   },
   {
-    id: "instagram", label: "INSTAGRAM", handle: "@yourhandle", href: "https://instagram.com/yourhandle", icon: "📷", barIcon: icon2, bars: 5, newBars: [1, 2], counts: ["3.4M", "2.5M", "676K", "412K", "198K"],
-    links: ["instagram.com/p/C4xQmRrNk2a", "instagram.com/p/C3wLpBsOj7f", "instagram.com/reel/C2vKoArMi6e", "instagram.com/p/C1uJnZqLh5d", "instagram.com/reel/C0tImYpKg4c"],
+    id: "github", label: "GITHUB", handle: "@qusay4421", href: "https://github.com/qusay4421", icon: "🐙", barIcon: icon2, bars: 1, newBars: [0], counts: ["VIEW"],
+    links: ["github.com/qusay4421"],
     stats: [
-      { tag: "FOL", value: "3.4K", color: "#e1306c" },
-      { tag: "PST", value: "128",  color: "#f77737" },
+      { tag: "PRJ", value: "8+",   color: "#e6edf3" },
+      { tag: "LNG", value: "15+",  color: "#8b949e" },
     ],
   },
   {
-    id: "tiktok", label: "TIKTOK", handle: "@yourhandle", href: "https://tiktok.com/@yourhandle", icon: "🎵", barIcon: icon3, bars: 7, newBars: [0, 3, 5, 6], counts: ["5.1M", "3.7M", "2.2M", "1.4M", "831K", "490K", "217K"],
-    links: ["tiktok.com/@yourhandle/video/7318492016374859054", "tiktok.com/@yourhandle/video/7305837261940183342", "tiktok.com/@yourhandle/video/7291046385720348974", "tiktok.com/@yourhandle/video/7278392047163820334", "tiktok.com/@yourhandle/video/7264819203847165742", "tiktok.com/@yourhandle/video/7251047382916430126", "tiktok.com/@yourhandle/video/7237294018463851822"],
+    id: "email", label: "EMAIL", handle: "qusayalbalkhi29", href: "mailto:qusayalbalkhi29@gmail.com", icon: "📧", barIcon: icon3, bars: 1, newBars: [], counts: ["SEND"],
+    links: ["qusayalbalkhi29@gmail.com"],
     stats: [
-      { tag: "FOL", value: "8.9K", color: "#00f2ea" },
-      { tag: "LKS", value: "52K",  color: "#ff0050" },
+      { tag: "PH",  value: "6478", color: "#ea4335" },
+      { tag: "AV",  value: "OPEN", color: "#fbbc04" },
     ],
   },
 ];
 
-export default function Socials() {
+export default function Socials({ onBack }) {
   const [active, setActive]               = useState(0);
   const [mounted, setMounted]             = useState(false);
   const [activeInfoBar, setActiveInfoBar] = useState(0);
   const [focus, setFocus]                 = useState("left"); // "left" | "right"
-  const navigate = useNavigate();
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 60);
@@ -59,22 +58,22 @@ export default function Socials() {
   useEffect(() => {
     const onKey = (e) => {
       if (focus === "left") {
-        if (e.key === "ArrowUp")    setActive(i => Math.max(0, i - 1));
-        if (e.key === "ArrowDown")  setActive(i => Math.min(ITEMS.length - 1, i + 1));
-        if (e.key === "ArrowRight") { setFocus("right"); setActiveInfoBar(0); }
+        if (e.key === "ArrowUp")    { sounds.itemNavigation(); setActive(i => (i - 1 + ITEMS.length) % ITEMS.length); }
+        if (e.key === "ArrowDown")  { sounds.itemNavigation(); setActive(i => (i + 1) % ITEMS.length); }
+        if (e.key === "ArrowRight") { sounds.itemNavigation(); setFocus("right"); setActiveInfoBar(0); }
         if (e.key === "Enter")      window.open(ITEMS[active].href, "_blank");
       } else {
         const barCount = ITEMS[active].bars;
-        if (e.key === "ArrowUp")   setActiveInfoBar(i => Math.max(0, i - 1));
-        if (e.key === "ArrowDown") setActiveInfoBar(i => Math.min(barCount - 1, i + 1));
-        if (e.key === "ArrowLeft") setFocus("left");
+        if (e.key === "ArrowUp")   { sounds.itemNavigation(); setActiveInfoBar(i => (i - 1 + barCount) % barCount); }
+        if (e.key === "ArrowDown") { sounds.itemNavigation(); setActiveInfoBar(i => (i + 1) % barCount); }
+        if (e.key === "ArrowLeft") { sounds.itemNavigation(); setFocus("left"); }
         if (e.key === "Enter")     window.open("https://" + ITEMS[active].links[activeInfoBar], "_blank");
       }
-      if ((e.key === "ArrowLeft" && focus === "left") || e.key === "Escape" || e.key === "Backspace") navigate(-1);
+      if ((e.key === "ArrowLeft" && focus === "left") || e.key === "Escape" || e.key === "Backspace") onBack();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [active, navigate, focus]);
+  }, [active, focus, onBack]);
 
   return (
     <div id="menu-screen">
@@ -522,10 +521,11 @@ export default function Socials() {
             key={item.id}
             className={`sc-bar-outer${active === i ? " active" : ""}${mounted ? " mounted" : ""}`}
             onClick={() => {
+              sounds.goIntoTab();
               if (active === i) window.open(item.href, "_blank");
               else setActive(i);
             }}
-            onMouseEnter={() => setActive(i)}
+            onMouseEnter={() => { sounds.itemNavigation(); setActive(i); }}
           >
             <div className="sc-bar-red" />
             <div className="sc-bar">
@@ -575,8 +575,8 @@ export default function Socials() {
           className={`sc-info-bar-wrap${activeInfoBar === i ? " selected" : ""}`}
           key={`bar-${active}-${i}`}
           style={{ top: `${155 + i * 52}px`, animationDelay: `${i * 50}ms` }}
-          onClick={() => setActiveInfoBar(i)}
-          onMouseEnter={() => setActiveInfoBar(i)}
+          onClick={() => { sounds.goIntoTab(); setActiveInfoBar(i); }}
+          onMouseEnter={() => { sounds.itemNavigation(); setActiveInfoBar(i); }}
         >
           {ITEMS[active].newBars.includes(i) && (
             <img className="sc-info-bar-new" src={newsign} alt="" />

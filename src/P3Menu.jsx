@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { sounds } from "./sounds";
 
 const ITEMS = [
   { id: "about",   label: "ABOUT ME",      page: "about",   fontSize: 80, offsetX: 0,  offsetY: 0,  skew: -6,  skewY: 10  },
@@ -6,6 +7,7 @@ const ITEMS = [
   { id: "github",  label: "GITHUB LINK",   page: "github",  fontSize: 68, offsetX: 8, offsetY: 6,  skew: 0, skewY: -4  },
   { id: "socials", label: "SOCIALS",       page: "socials", fontSize: 74, offsetX: 16, offsetY: 8,  skew: -3,  skewY: 5   },
   { id: "sideproj",label: "SIDE PROJECTS", page: "sideproj",fontSize: 56, offsetX: 10, offsetY: 6,  skew: -4,  skewY: 7   },
+  { id: "volume",  label: "VOLUME",        page: "volume",  fontSize: 72, offsetX: 14, offsetY: 6,  skew: -5,  skewY: 6   },
 ];
 
 const CLIP_SHAPES = [
@@ -33,9 +35,9 @@ export default function P3Menu({ onNavigate }) {
 
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === "ArrowUp")   activate(Math.max(0, active - 1));
-      if (e.key === "ArrowDown") activate(Math.min(ITEMS.length - 1, active + 1));
-      if (e.key === "Enter")     onNavigate?.(ITEMS[active].page);
+      if (e.key === "ArrowUp")   { sounds.itemNavigation(); activate((active - 1 + ITEMS.length) % ITEMS.length); }
+      if (e.key === "ArrowDown") { sounds.itemNavigation(); activate((active + 1) % ITEMS.length); }
+      if (e.key === "Enter")     { onNavigate?.(ITEMS[active].page); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -54,8 +56,6 @@ export default function P3Menu({ onNavigate }) {
           pointer-events: none;
         }
 
-        .p3-stripe  { position:absolute; right:0; top:0; bottom:0; width:5px; background:#c4001a; z-index:10; pointer-events:none; }
-        .p3-stripe2 { position:absolute; right:9px; top:0; bottom:0; width:2px; background:rgba(245,122,139,0.22); z-index:10; pointer-events:none; }
 
         .p3-menu {
           position: relative;
@@ -219,8 +219,6 @@ export default function P3Menu({ onNavigate }) {
           <span>jade's</span>
           <span>persona</span>
         </div>
-        <div className="p3-stripe" />
-        <div className="p3-stripe2" />
 
         <nav className="p3-menu">
           {ITEMS.map((item, i) => {
@@ -242,7 +240,7 @@ export default function P3Menu({ onNavigate }) {
                   transitionDelay: mounted ? `${i * 80}ms` : "0ms",
                 }}
                 onClick={(e) => { e.preventDefault(); onNavigate?.(item.page); }}
-                onMouseEnter={() => activate(i)}
+                onMouseEnter={() => { sounds.itemNavigation(); activate(i); }}
                 aria-current={isActive ? "page" : undefined}
               >
                 <div className="p3-glow" />

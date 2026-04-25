@@ -1,22 +1,50 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { sounds } from "./sounds";
 
 const ITEMS = [
-  { id: "i", badge: "I", title: "EDUCATION", subtitle: "University / Coursework", rank: 3 },
-  { id: "ii", badge: "II", title: "SKILLS", subtitle: "Frontend / Design / UI", rank: 4 },
-  { id: "iii", badge: "III", title: "PROJECTS", subtitle: "Featured Work", rank: 5 },
-  { id: "iv", badge: "IV", title: "EXPERIENCE", subtitle: "Internships / Roles", rank: 2 },
+  { id: "i",   badge: "I",   title: "EDUCATION",  subtitle: "University of Toronto · CS",    rank: 3 },
+  { id: "ii",  badge: "II",  title: "SKILLS",      subtitle: "Languages / Tools / Methods",  rank: 15 },
+  { id: "iii", badge: "III", title: "PROJECTS",    subtitle: "Featured Work",                rank: 8 },
+  { id: "iv",  badge: "IV",  title: "EXPERIENCE",  subtitle: "Roles & Volunteer Work",       rank: 3 },
 ];
 
 const EDUCATION_ROWS = [
-  { index: "01", title: "General Education", status: "Complete" },
-  { index: "02", title: "Computer Science Core", status: "In Progress" },
-  { index: "03", title: "Elective Track", status: "Queued" },
-  { index: "04", title: "Capstone Prep", status: "Pending" },
+  { index: "01", title: "Data Structures & Algorithms",  status: "Done" },
+  { index: "02", title: "Machine Learning",              status: "Done" },
+  { index: "03", title: "Operating Systems",             status: "Done" },
+  { index: "04", title: "Web Development",               status: "Done" },
+  { index: "05", title: "Computer Architecture",         status: "Done" },
+  { index: "06", title: "Linear Algebra",                status: "Done" },
+  { index: "07", title: "Systems Design",                status: "Active" },
 ];
 
-export default function ResumePage({ src }) {
-  const navigate = useNavigate();
+const SKILLS_ROWS = [
+  { index: "01", title: "Python · Lua · Java · JavaScript · C · C++",     status: "Lang" },
+  { index: "02", title: "C# · CSS · HTML · SQL · Assembly · Haskell",     status: "Lang" },
+  { index: "03", title: "Racket · MATLAB",                                 status: "Lang" },
+  { index: "04", title: "Git · TensorFlow · OpenCV · Valgrind · NumPy",   status: "Tools" },
+  { index: "05", title: "REST API · PostgreSQL · JIRA · VS Code · Linux",  status: "Tools" },
+  { index: "06", title: "Agile · Scrum · SOLID · MVC · Design Patterns",  status: "Method" },
+];
+
+const PROJECTS_ROWS = [
+  { index: "01", title: "Sign Language Detection System",  status: "WIP" },
+  { index: "02", title: "CallLog Analytics",              status: "Done" },
+  { index: "03", title: "Linux Shell",                    status: "Done" },
+  { index: "04", title: "Paint Desktop Drawing Program",  status: "Done" },
+  { index: "05", title: "Job Scheduler w/ Sync",          status: "Done" },
+  { index: "06", title: "Treemap Visualiser",             status: "Done" },
+  { index: "07", title: "Balatro Clone",                  status: "Done" },
+  { index: "08", title: "Sokoban Game (RISC-V)",          status: "Done" },
+];
+
+const EXPERIENCE_ROWS = [
+  { index: "01", title: "Exceed Robotics — Programming Tutor",  status: "2024–25" },
+  { index: "02", title: "Lady of Learning — Private Tutor",     status: "2025–Now" },
+  { index: "03", title: "Technical Volunteer",                   status: "2021–Now" },
+];
+
+export default function ResumePage({ src, onBack }) {
   const [active, setActive] = useState(1);
   const [mounted, setMounted] = useState(false);
 
@@ -27,15 +55,15 @@ export default function ResumePage({ src }) {
 
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === "ArrowUp") setActive((i) => Math.max(0, i - 1));
-      if (e.key === "ArrowDown") setActive((i) => Math.min(ITEMS.length - 1, i + 1));
-      if (e.key === "ArrowLeft") navigate(-1);
-      if (e.key === "Escape" || e.key === "Backspace") navigate(-1);
+      if (e.key === "ArrowUp") { sounds.itemNavigation(); setActive((i) => (i - 1 + ITEMS.length) % ITEMS.length); }
+      if (e.key === "ArrowDown") { sounds.itemNavigation(); setActive((i) => (i + 1) % ITEMS.length); }
+      if (e.key === "ArrowLeft") onBack();
+      if (e.key === "Escape" || e.key === "Backspace") onBack();
     };
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [navigate]);
+  }, [onBack]);
 
   return (
     <div id="menu-screen">
@@ -379,9 +407,11 @@ export default function ResumePage({ src }) {
               className={`resume-card-wrap${active === index ? " active" : ""}${mounted ? " mounted" : ""}`}
               style={{ transitionDelay: `${index * 55}ms` }}
               onMouseEnter={() => {
+                sounds.itemNavigation();
                 setActive(index);
               }}
               onClick={() => {
+                sounds.goIntoTab();
                 setActive(index);
               }}
             >
@@ -409,9 +439,8 @@ export default function ResumePage({ src }) {
             <div className="resume-detail-top">
               <div className="resume-detail-top-index">01</div>
               <div className="resume-detail-top-title">EDUCATION LOG</div>
-              <div className="resume-detail-top-progress">7/5</div>
+              <div className="resume-detail-top-progress">2027</div>
             </div>
-
             <div className="resume-detail-list">
               {EDUCATION_ROWS.map((row) => (
                 <div className="resume-detail-row" key={row.index}>
@@ -421,13 +450,93 @@ export default function ResumePage({ src }) {
                 </div>
               ))}
             </div>
-
             <div className="resume-detail-bottom">
               <div className="resume-detail-bottom-title">DETAILS</div>
               <div className="resume-detail-bullets">
-                <div className="resume-detail-bullet">- Maintain progress across required classes and supporting work.</div>
-                <div className="resume-detail-bullet">- Track portfolio-ready projects tied to coursework and labs.</div>
-                <div className="resume-detail-bullet">- Keep materials prepared for internships, research, and review.</div>
+                <div className="resume-detail-bullet">- Honours BSc Computer Science, University of Toronto (2023–2027).</div>
+                <div className="resume-detail-bullet">- Coursework spans systems, ML, web dev, architecture, and theory.</div>
+                <div className="resume-detail-bullet">- Preparing portfolio-ready projects alongside academic progress.</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {active === 1 && (
+          <div className="resume-detail-panel">
+            <div className="resume-detail-top">
+              <div className="resume-detail-top-index">02</div>
+              <div className="resume-detail-top-title">SKILLS LOG</div>
+              <div className="resume-detail-top-progress">15+</div>
+            </div>
+            <div className="resume-detail-list">
+              {SKILLS_ROWS.map((row) => (
+                <div className="resume-detail-row" key={row.index + row.title}>
+                  <div className="resume-detail-row-index">{row.index}</div>
+                  <div className="resume-detail-row-title">{row.title}</div>
+                  <div className="resume-detail-status">{row.status}</div>
+                </div>
+              ))}
+            </div>
+            <div className="resume-detail-bottom">
+              <div className="resume-detail-bottom-title">DETAILS</div>
+              <div className="resume-detail-bullets">
+                <div className="resume-detail-bullet">- 15+ languages across systems, web, ML, and scripting domains.</div>
+                <div className="resume-detail-bullet">- Experienced with ML frameworks, databases, and DevOps tooling.</div>
+                <div className="resume-detail-bullet">- Applies Agile/Scrum and SOLID principles in collaborative projects.</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {active === 2 && (
+          <div className="resume-detail-panel">
+            <div className="resume-detail-top">
+              <div className="resume-detail-top-index">03</div>
+              <div className="resume-detail-top-title">PROJECTS LOG</div>
+              <div className="resume-detail-top-progress">8</div>
+            </div>
+            <div className="resume-detail-list">
+              {PROJECTS_ROWS.map((row) => (
+                <div className="resume-detail-row" key={row.index}>
+                  <div className="resume-detail-row-index">{row.index}</div>
+                  <div className="resume-detail-row-title">{row.title}</div>
+                  <div className="resume-detail-status">{row.status}</div>
+                </div>
+              ))}
+            </div>
+            <div className="resume-detail-bottom">
+              <div className="resume-detail-bottom-title">FEATURED</div>
+              <div className="resume-detail-bullets">
+                <div className="resume-detail-bullet">- ML sign language detector using OpenCV & TensorFlow (in progress).</div>
+                <div className="resume-detail-bullet">- Linux shell in C with 7+ features including client-server sockets.</div>
+                <div className="resume-detail-bullet">- Balatro clone in Lua/LÖVE2D with full card scoring & joker system.</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {active === 3 && (
+          <div className="resume-detail-panel">
+            <div className="resume-detail-top">
+              <div className="resume-detail-top-index">04</div>
+              <div className="resume-detail-top-title">EXPERIENCE LOG</div>
+              <div className="resume-detail-top-progress">3</div>
+            </div>
+            <div className="resume-detail-list">
+              {EXPERIENCE_ROWS.map((row) => (
+                <div className="resume-detail-row" key={row.index}>
+                  <div className="resume-detail-row-index">{row.index}</div>
+                  <div className="resume-detail-row-title">{row.title}</div>
+                  <div className="resume-detail-status">{row.status}</div>
+                </div>
+              ))}
+            </div>
+            <div className="resume-detail-bottom">
+              <div className="resume-detail-bottom-title">DETAILS</div>
+              <div className="resume-detail-bullets">
+                <div className="resume-detail-bullet">- Taught programming to 20+ youth learners at Exceed Robotics.</div>
+                <div className="resume-detail-bullet">- Improved students' math & calculus grades by 40% at Lady of Learning.</div>
+                <div className="resume-detail-bullet">- Volunteered tech support to 30+ community members since 2021.</div>
               </div>
             </div>
           </div>

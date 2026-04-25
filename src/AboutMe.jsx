@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { sounds } from "./sounds";
 import char1 from "./assets/char1.png";
 import char2 from "./assets/char2.png";
 import char3 from "./assets/char3.png";
-import bgVideo from "./assets/main1.mp4";
+import bgVideo from "./assets/main2.mp4";
 import icon1 from "./assets/icon1.png";
 import icon2 from "./assets/icon2.png";
 import icon3 from "./assets/icon3.png";
@@ -16,24 +16,24 @@ const MAIN_IMAGES = [mainm, mainm2, mainf];
 
 const REVEAL_CONTENT = [
   {
-    upper: ["name moneybagg", "age:23"],
-    lower: "major: computer science",
+    upper: ["QUSSAI ALBALKHI", "COMPUTER SCIENCE @ UNIVERSITY OF TORONTO", "GTA, ONTARIO · GRADUATING 2027"],
+    lower: "qusayalbalkhi29@gmail.com",
   },
   {
     upper: [
-      "Cleopatra lived closer to the Moon landing than to the building of the pyramids.",
-      "Vikings kept cats on ships for pest control (and vibes).",
-      "In medieval Europe, animals could be put on trial for crimes",
+      "TUTORED 20+ YOUTH LEARNERS IN PROGRAMMING AT EXCEED ROBOTICS",
+      "IMPROVED STUDENTS' MATH & CALCULUS GRADES BY 40% AT LADY OF LEARNING",
+      "VOLUNTEERED TECH SUPPORT TO 30+ COMMUNITY MEMBERS SINCE 2021",
     ],
-    lower: "abbove is some history fun fact",
+    lower: "TEACHING & COMMUNITY EXPERIENCE",
   },
   {
     upper: [
-      "Oxford University founding is older than the Aztec Empire.",
-      "The shortest war in history lasted 38–45 minutes (Britain vs Zanzibar).",
-      "Humans have been writing for ~5,000 years",
+      "BUILT A SIGN LANGUAGE DETECTOR USING ML & COMPUTER VISION (IN PROGRESS)",
+      "RECREATED BALATRO CARD GAME FROM SCRATCH IN LUA / LÖVE2D",
+      "CODED A SOKOBAN GAME ENTIRELY IN RISC-V ASSEMBLY",
     ],
-    lower: "yes it's a place holder",
+    lower: "HIGHLIGHT PROJECTS",
   },
 ];
 
@@ -45,36 +45,35 @@ const ROLES = [
 
 const ITEMS = [
   {
-    id: "twitch", label: "ABOUT ME", handle: "@yourname", href: "https://twitch.tv/yourname", icon: "🎮", barIcon: icon1, bars: 1, newBars: [0], counts: ["56"],
-    links: ["twitch.tv/videos/2041837265"],
+    id: "about", label: "ABOUT ME", handle: "@qussaialbalkhi", href: "", icon: "👤", barIcon: icon1, bars: 1, newBars: [], counts: [""],
+    links: [""],
     stats: [
-      { tag: "FOL", value: "1.2K", color: "#9147ff" },
-      { tag: "VWR", value: "042",  color: "#bf94ff" },
+      { tag: "YR",  value: "3RD",  color: "#9147ff" },
+      { tag: "GPA", value: "CS",   color: "#bf94ff" },
     ],
   },
   {
-    id: "instagram", label: "FUN FACT ABOUT ME", handle: "@yourhandle", href: "https://instagram.com/yourhandle", icon: "📷", barIcon: icon2, bars: 5, newBars: [1, 2], counts: ["3.4M", "2.5M", "676K", "412K", "198K"],
-    links: ["instagram.com/p/C4xQmRrNk2a", "instagram.com/p/C3wLpBsOj7f", "instagram.com/reel/C2vKoArMi6e", "instagram.com/p/C1uJnZqLh5d", "instagram.com/reel/C0tImYpKg4c"],
+    id: "funfact", label: "FUN FACT", handle: "@qussaialbalkhi", href: "", icon: "📖", barIcon: icon2, bars: 1, newBars: [], counts: [""],
+    links: [""],
     stats: [
-      { tag: "FOL", value: "3.4K", color: "#e1306c" },
-      { tag: "PST", value: "128",  color: "#f77737" },
+      { tag: "STU", value: "20+",  color: "#e1306c" },
+      { tag: "IMP", value: "+40%", color: "#f77737" },
     ],
   },
   {
-    id: "tiktok", label: "WIRED FACT ABOUT ME", handle: "@yourhandle", href: "https://tiktok.com/@yourhandle", icon: "🎵", barIcon: icon3, bars: 7, newBars: [0, 3, 5, 6], counts: ["5.1M", "3.7M", "2.2M", "1.4M", "831K", "490K", "217K"],
-    links: ["tiktok.com/@yourhandle/video/7318492016374859054", "tiktok.com/@yourhandle/video/7305837261940183342", "tiktok.com/@yourhandle/video/7291046385720348974", "tiktok.com/@yourhandle/video/7278392047163820334", "tiktok.com/@yourhandle/video/7264819203847165742", "tiktok.com/@yourhandle/video/7251047382916430126", "tiktok.com/@yourhandle/video/7237294018463851822"],
+    id: "projects", label: "HIGHLIGHT", handle: "@qussaialbalkhi", href: "", icon: "⚡", barIcon: icon3, bars: 1, newBars: [], counts: [""],
+    links: [""],
     stats: [
-      { tag: "FOL", value: "8.9K", color: "#00f2ea" },
-      { tag: "LKS", value: "52K",  color: "#ff0050" },
+      { tag: "PRJ", value: "8",    color: "#00f2ea" },
+      { tag: "LNG", value: "15+",  color: "#ff0050" },
     ],
   },
 ];
 
-export default function AboutMe() {
+export default function AboutMe({ onBack }) {
   const [active, setActive]   = useState(0);
   const [mounted, setMounted] = useState(false);
   const [revealed, setRevealed] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 60);
@@ -83,19 +82,19 @@ export default function AboutMe() {
 
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === "ArrowUp") setActive(i => Math.max(0, i - 1));
-      if (e.key === "ArrowDown") setActive(i => Math.min(ITEMS.length - 1, i + 1));
+      if (e.key === "ArrowUp") { sounds.itemNavigation(); setActive(i => (i - 1 + ITEMS.length) % ITEMS.length); }
+      if (e.key === "ArrowDown") { sounds.itemNavigation(); setActive(i => (i + 1) % ITEMS.length); }
       if (e.key === "Enter") setRevealed(true);
       if (e.key === "ArrowRight") setRevealed(true);
       if (e.key === "ArrowLeft") {
         if (revealed) setRevealed(false);
-        else navigate(-1);
+        else onBack();
       }
-      if (e.key === "Escape" || e.key === "Backspace") navigate(-1);
+      if (e.key === "Escape" || e.key === "Backspace") { if (revealed) setRevealed(false); else onBack(); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [active, navigate, revealed]);
+  }, [active, revealed, onBack]);
 
   return (
     <div id="menu-screen">
@@ -617,9 +616,13 @@ export default function AboutMe() {
             key={item.id}
             className={`sc-bar-outer${active === i ? " active" : ""}${mounted ? " mounted" : ""}`}
             onClick={() => {
+              sounds.goIntoTab();
               setActive(i);
+              setRevealed(true);
             }}
             onMouseEnter={() => {
+              if (revealed) return;
+              sounds.itemNavigation();
               setActive(i);
             }}
           >
