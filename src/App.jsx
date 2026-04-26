@@ -11,35 +11,9 @@ import AboutMe from './AboutMe'
 import VolumePage from './VolumePage'
 import SeamlessVideo from './SeamlessVideo'
 import CrossfadeVideos from './CrossfadeVideos'
+import RippleTransition from './RippleTransition'
 import { sounds } from './sounds'
 import './App.css'
-
-function RippleOverlay({ x, y, phase }) {
-  const [size, setSize] = useState('0px')
-
-  useEffect(() => {
-    if (phase === 'in') {
-      const id = requestAnimationFrame(() => setSize('200vmax'))
-      return () => cancelAnimationFrame(id)
-    } else {
-      setSize('0px')
-    }
-  }, [phase])
-
-  return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, zIndex: 9999,
-        background: `radial-gradient(circle at ${x}px ${y}px, #00213d 0%, #000c1e 50%, #000610 100%)`,
-        clipPath: `circle(${size} at ${x}px ${y}px)`,
-        transition: phase === 'in'
-          ? 'clip-path 0.45s cubic-bezier(0.4, 0, 1, 1)'
-          : 'clip-path 0.4s cubic-bezier(0, 0, 0.6, 1)',
-        pointerEvents: 'all',
-      }}
-    />
-  )
-}
 
 function IntroScreen({ onEnter }) {
   useEffect(() => {
@@ -113,6 +87,13 @@ function MenuScreen({ onNavigate, onBack }) {
   )
 }
 
+// Blob covers the screen in RIPPLE_IN_ANIM_MS. Navigate fires at RIPPLE_IN_MS
+// (slightly early — blob already covers all corners at that point due to the 1.18
+// radius margin). Hole opens immediately after in RIPPLE_OUT_MS.
+const RIPPLE_IN_MS      = 800
+const RIPPLE_IN_ANIM_MS = 920
+const RIPPLE_OUT_MS     = 380
+
 export default function App() {
   const [appPhase, setAppPhase] = useState('intro')
   const navigate = useNavigate()
@@ -124,8 +105,19 @@ export default function App() {
     const onMouseDown = (e) => {
       lastClick.current = { x: e.clientX, y: e.clientY }
     }
+    // Capture phase fires before child keydown handlers so keyboard nav
+    // always ripples from screen center.
+    const onKeyDown = (e) => {
+      if (e.key === 'Enter' || e.key === 'Escape' || e.key === 'Backspace') {
+        lastClick.current = { x: window.innerWidth / 2, y: window.innerHeight / 2 }
+      }
+    }
     window.addEventListener('mousedown', onMouseDown)
-    return () => window.removeEventListener('mousedown', onMouseDown)
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => {
+      window.removeEventListener('mousedown', onMouseDown)
+      window.removeEventListener('keydown', onKeyDown, true)
+    }
   }, [])
 
   const withRipple = useCallback((navFn) => {
@@ -139,8 +131,8 @@ export default function App() {
       setTimeout(() => {
         setRipple(null)
         transiting.current = false
-      }, 420)
-    }, 460)
+      }, RIPPLE_OUT_MS)
+    }, RIPPLE_IN_MS)
   }, [])
 
   const goToPage = useCallback((path) => {
@@ -177,7 +169,15 @@ export default function App() {
           </Routes>
         )
       }
-      {ripple && <RippleOverlay x={ripple.x} y={ripple.y} phase={ripple.phase} />}
+      {ripple && (
+        <RippleTransition
+          x={ripple.x}
+          y={ripple.y}
+          phase={ripple.phase}
+          inDuration={RIPPLE_IN_ANIM_MS}
+          outDuration={RIPPLE_OUT_MS}
+        />
+      )}
     </>
   )
 }
