@@ -2,15 +2,44 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
 import main1 from './assets/main1.mp4'
 import main2 from './assets/main2.mp4'
+import main2loop from './assets/main2loop.mp4'
 import main3 from './assets/main3.mp4'
-import main3loop from './assets/main3loop.mp4'
 import P3Menu from './P3Menu'
 import ResumePage from './ResumePage'
 import Socials from './Socials'
 import AboutMe from './AboutMe'
 import VolumePage from './VolumePage'
+import SeamlessVideo from './SeamlessVideo'
+import CrossfadeVideos from './CrossfadeVideos'
 import { sounds } from './sounds'
 import './App.css'
+
+function RippleOverlay({ x, y, phase }) {
+  const [size, setSize] = useState('0px')
+
+  useEffect(() => {
+    if (phase === 'in') {
+      const id = requestAnimationFrame(() => setSize('200vmax'))
+      return () => cancelAnimationFrame(id)
+    } else {
+      setSize('0px')
+    }
+  }, [phase])
+
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: `radial-gradient(circle at ${x}px ${y}px, #00213d 0%, #000c1e 50%, #000610 100%)`,
+        clipPath: `circle(${size} at ${x}px ${y}px)`,
+        transition: phase === 'in'
+          ? 'clip-path 0.45s cubic-bezier(0.4, 0, 1, 1)'
+          : 'clip-path 0.4s cubic-bezier(0, 0, 0.6, 1)',
+        pointerEvents: 'all',
+      }}
+    />
+  )
+}
 
 function IntroScreen({ onEnter }) {
   useEffect(() => {
@@ -21,7 +50,7 @@ function IntroScreen({ onEnter }) {
 
   return (
     <div id="menu-screen">
-      <video src={main1} autoPlay loop muted playsInline />
+      <SeamlessVideo src={main1} />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
         @keyframes intro-blink {
@@ -68,17 +97,6 @@ function IntroScreen({ onEnter }) {
 }
 
 function MenuScreen({ onNavigate, onBack }) {
-  const [looping, setLooping] = useState(false)
-  const videoRef = useRef(null)
-
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
-    const handleEnded = () => setLooping(true)
-    video.addEventListener('ended', handleEnded)
-    return () => video.removeEventListener('ended', handleEnded)
-  }, [])
-
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape' || e.key === 'Backspace') onBack()
@@ -89,10 +107,7 @@ function MenuScreen({ onNavigate, onBack }) {
 
   return (
     <div id="menu-screen">
-      {looping
-        ? <video src={main3loop} autoPlay loop muted playsInline />
-        : <video ref={videoRef} src={main3} autoPlay muted playsInline />
-      }
+      <CrossfadeVideos firstSrc={main2} loopSrc={main2loop} />
       <P3Menu onNavigate={onNavigate} />
     </div>
   )
@@ -101,36 +116,68 @@ function MenuScreen({ onNavigate, onBack }) {
 export default function App() {
   const [appPhase, setAppPhase] = useState('intro')
   const navigate = useNavigate()
+  const lastClick = useRef({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
+  const [ripple, setRipple] = useState(null)
+  const transiting = useRef(false)
+
+  useEffect(() => {
+    const onMouseDown = (e) => {
+      lastClick.current = { x: e.clientX, y: e.clientY }
+    }
+    window.addEventListener('mousedown', onMouseDown)
+    return () => window.removeEventListener('mousedown', onMouseDown)
+  }, [])
+
+  const withRipple = useCallback((navFn) => {
+    if (transiting.current) return
+    transiting.current = true
+    const { x, y } = lastClick.current
+    setRipple({ x, y, phase: 'in' })
+    setTimeout(() => {
+      navFn()
+      setRipple({ x, y, phase: 'out' })
+      setTimeout(() => {
+        setRipple(null)
+        transiting.current = false
+      }, 420)
+    }, 460)
+  }, [])
 
   const goToPage = useCallback((path) => {
     sounds.goIntoTab()
-    navigate(path)
-  }, [navigate])
+    withRipple(() => navigate(path))
+  }, [navigate, withRipple])
 
   const goBack = useCallback(() => {
     sounds.goOutTab()
-    navigate(-1)
-  }, [navigate])
+    withRipple(() => navigate(-1))
+  }, [navigate, withRipple])
 
   const handleEnter = useCallback(() => {
     sounds.goIntoTab()
-    setAppPhase('menu')
-  }, [])
+    withRipple(() => setAppPhase('menu'))
+  }, [withRipple])
 
   const handleBackToIntro = useCallback(() => {
     sounds.goOutTab()
-    setAppPhase('intro')
-  }, [])
+    withRipple(() => setAppPhase('intro'))
+  }, [withRipple])
 
-  return appPhase === 'intro'
-    ? <IntroScreen onEnter={handleEnter} />
-    : (
-      <Routes>
-        <Route path="/"        element={<MenuScreen onNavigate={(page) => goToPage(`/${page}`)} onBack={handleBackToIntro} />} />
-        <Route path="/about"   element={<AboutMe    onBack={goBack} />} />
-        <Route path="/resume"  element={<ResumePage src={main2} onBack={goBack} />} />
-        <Route path="/socials" element={<Socials    onBack={goBack} />} />
-        <Route path="/volume"  element={<VolumePage onBack={goBack} />} />
-      </Routes>
-    )
+  return (
+    <>
+      {appPhase === 'intro'
+        ? <IntroScreen onEnter={handleEnter} />
+        : (
+          <Routes>
+            <Route path="/"        element={<MenuScreen onNavigate={(page) => goToPage(`/${page}`)} onBack={handleBackToIntro} />} />
+            <Route path="/about"   element={<AboutMe    onBack={goBack} />} />
+            <Route path="/resume"  element={<ResumePage src={main2} onBack={goBack} />} />
+            <Route path="/socials" element={<Socials    onBack={goBack} />} />
+            <Route path="/volume"  element={<VolumePage onBack={goBack} />} />
+          </Routes>
+        )
+      }
+      {ripple && <RippleOverlay x={ripple.x} y={ripple.y} phase={ripple.phase} />}
+    </>
+  )
 }

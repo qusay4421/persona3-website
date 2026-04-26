@@ -4,7 +4,7 @@ import {
   SONGS, getMusicState, setMusicCallback, getMusicProgress, musicSeek,
   musicPlayPause, musicNext, musicPrev, musicSetTrack, musicToggleShuffle,
 } from "./sounds"
-import bgVideo from "./assets/main2.mp4"
+import bgVideo from "./assets/main3.mp4"
 
 // FOCUS: 0 = SFX slider, 1 = Music slider, 2 = Radio list
 // Radio list indices: 0..SONGS.length-1 = tracks, SONGS.length = Shuffle row
@@ -286,9 +286,7 @@ export default function VolumePage({ onBack }) {
         /* ── Progress Bar ── */
         .music-progress-wrap {
           display: flex; flex-direction: column; gap: 5px;
-          padding: 10px 14px 6px; background: rgba(6,11,42,0.95);
-          border-left: 1px solid rgba(133,244,255,0.14);
-          border-right: 1px solid rgba(133,244,255,0.14);
+          padding: 10px 14px 6px;
         }
 
         .music-progress-bar {
