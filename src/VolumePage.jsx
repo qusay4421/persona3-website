@@ -6,9 +6,7 @@ import {
 } from "./sounds"
 import bgVideo from "./assets/main3.mp4"
 
-// FOCUS: 0 = SFX slider, 1 = Music slider, 2 = Radio list
-// Radio list indices: 0..SONGS.length-1 = tracks, SONGS.length = Shuffle row
-const RADIO_TOTAL = SONGS.length + 1  // tracks + shuffle row
+const RADIO_TOTAL = SONGS.length + 1
 
 function formatTime(s) {
   if (!s || isNaN(s)) return "0:00"
@@ -16,9 +14,13 @@ function formatTime(s) {
   return `${m}:${Math.floor(s % 60).toString().padStart(2, "0")}`
 }
 
-function VolumeSlider({ label, level, isFocused, onClick }) {
+function VolumeSlider({ label, level, isFocused, onFocus, onSetLevel }) {
   return (
-    <div className={`vol-slider${isFocused ? " focused" : ""}`} onClick={onClick}>
+    <div
+      className={`vol-slider${isFocused ? " focused" : ""}`}
+      onClick={onFocus}
+      onMouseEnter={onFocus}
+    >
       <div className="vol-slider-header">
         <span className="vol-slider-cursor">{isFocused ? "►" : " "}</span>
         <span className="vol-slider-label">{label}</span>
@@ -26,7 +28,7 @@ function VolumeSlider({ label, level, isFocused, onClick }) {
       <div className="vol-track">
         <div className="vol-bars">
           {Array.from({ length: 10 }, (_, i) => {
-            const filled = i < level
+            const filled    = i < level
             const heightPct = 30 + (i + 1) * 7
             return (
               <div
@@ -39,6 +41,7 @@ function VolumeSlider({ label, level, isFocused, onClick }) {
                     : "rgba(255,255,255,0.1)",
                   boxShadow: filled && isFocused ? "0 0 8px rgba(255,42,42,0.5)" : "none",
                 }}
+                onClick={(e) => { e.stopPropagation(); onSetLevel(i + 1) }}
               />
             )
           })}
@@ -69,7 +72,6 @@ export default function VolumePage({ onBack }) {
     return () => clearTimeout(t)
   }, [])
 
-  // Sync music state changes (auto-advance, etc.)
   useEffect(() => {
     setMusicCallback(({ idx, playing: p, shuffle: s }) => {
       setTrackIdx(idx); setPlaying(p); setShuffle(s)
@@ -77,13 +79,11 @@ export default function VolumePage({ onBack }) {
     return () => setMusicCallback(null)
   }, [])
 
-  // Poll playback position
   useEffect(() => {
     const id = setInterval(() => setProgress(getMusicProgress()), 500)
     return () => clearInterval(id)
   }, [])
 
-  // Keyboard handler
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape" || e.key === "Backspace") { onBack(); return }
@@ -93,24 +93,23 @@ export default function VolumePage({ onBack }) {
         if (e.key === "ArrowLeft")  adjustVol(-1)
         if (e.key === "ArrowUp") {
           sounds.itemNavigation()
-          if (focus === 0) { setFocus(2); setRadioIdx(RADIO_TOTAL - 1) }  // loop: SFX ← Shuffle
+          if (focus === 0) { setFocus(2); setRadioIdx(RADIO_TOTAL - 1) }
           else              setFocus(0)
         }
         if (e.key === "ArrowDown") {
           sounds.itemNavigation()
-          if (focus === 1) { setFocus(2); setRadioIdx(0) }  // Music → Radio[0]
+          if (focus === 1) { setFocus(2); setRadioIdx(0) }
           else              setFocus(1)
         }
       } else {
-        // focus === 2 (Radio list)
         if (e.key === "ArrowUp") {
           sounds.itemNavigation()
-          if (radioIdx === 0) setFocus(1)                                   // Radio[0] → Music
+          if (radioIdx === 0) setFocus(1)
           else                setRadioIdx(r => r - 1)
         }
         if (e.key === "ArrowDown") {
           sounds.itemNavigation()
-          if (radioIdx >= RADIO_TOTAL - 1) setFocus(0)                     // Shuffle → SFX (loop)
+          if (radioIdx >= RADIO_TOTAL - 1) setFocus(0)
           else                              setRadioIdx(r => r + 1)
         }
         if (e.key === "Enter") {
@@ -136,6 +135,9 @@ export default function VolumePage({ onBack }) {
     }
   }
 
+  function setSfx(level)   { setSfxLevel(level);   setVolume(level);      sounds.volume() }
+  function setMusic(level) { setMusicLevel(level);  setMusicVolume(level) }
+
   function handleProgressClick(e) {
     const rect = progressBarRef.current.getBoundingClientRect()
     const pct  = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
@@ -158,7 +160,6 @@ export default function VolumePage({ onBack }) {
           pointer-events: none; gap: 64px;
         }
 
-        /* ── Volume Panel ── */
         .vol-panel {
           pointer-events: all;
           display: flex; flex-direction: column; align-items: center; gap: 8px;
@@ -203,9 +204,10 @@ export default function VolumePage({ onBack }) {
         .vol-bars { display: flex; align-items: flex-end; gap: 5px; height: 52px; }
 
         .vol-bar {
-          width: 19px; border-radius: 2px 2px 0 0;
+          width: 19px; border-radius: 2px 2px 0 0; cursor: pointer;
           transition: background 0.15s ease, height 0.15s cubic-bezier(0.22,1,0.36,1);
         }
+        .vol-bar:hover { filter: brightness(1.4); }
 
         .vol-number {
           font-family: 'Anton', sans-serif; font-style: italic;
@@ -224,7 +226,6 @@ export default function VolumePage({ onBack }) {
         .vol-hint-key { border: 1px solid rgba(255,255,255,0.2); border-radius: 3px; padding: 1px 6px; font-size: 11px; }
         .vol-hint-row { display: flex; align-items: center; gap: 8px; }
 
-        /* ── Music Panel ── */
         .music-panel {
           pointer-events: all;
           display: flex; flex-direction: column; align-items: stretch;
@@ -242,7 +243,7 @@ export default function VolumePage({ onBack }) {
         .music-track-list {
           display: flex; flex-direction: column;
           background: rgba(8,14,52,0.92); border: 1px solid rgba(133,244,255,0.14);
-          clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%); overflow: hidden;
+          overflow: hidden;
         }
 
         .music-track-row {
@@ -283,7 +284,6 @@ export default function VolumePage({ onBack }) {
         .music-track-row.kbd .music-track-artist { color: rgba(133,244,255,0.7); }
         .music-track-row.music-shuffle-row.active .music-track-artist { color: #ff4466; }
 
-        /* ── Progress Bar ── */
         .music-progress-wrap {
           display: flex; flex-direction: column; gap: 5px;
           padding: 10px 14px 6px;
@@ -308,7 +308,6 @@ export default function VolumePage({ onBack }) {
           color: rgba(133,244,255,0.45);
         }
 
-        /* ── Controls ── */
         .music-controls {
           display: flex; align-items: center; justify-content: center;
           margin-top: 10px;
@@ -327,16 +326,14 @@ export default function VolumePage({ onBack }) {
         .music-play-btn { font-size: 24px; padding: 10px 28px; color: #ff2a2a; border-left: none; border-right: none; }
         .music-play-btn:hover { color: #ff6666; }
 
-        .vol-stripe  { position:absolute; right:0; top:0; bottom:0; width:5px; background:#c4001a; z-index:10; pointer-events:none; }
-        .vol-stripe2 { position:absolute; right:9px; top:0; bottom:0; width:2px; background:rgba(245,122,139,0.22); z-index:10; pointer-events:none; }
+        .vol-hint-media {
+          font-family: 'Anton', sans-serif; font-size: 11px; letter-spacing: 2px;
+          color: rgba(255,255,255,0.2); display: flex; gap: 14px; margin-top: 6px;
+        }
       `}</style>
-
-      <div className="vol-stripe" />
-      <div className="vol-stripe2" />
 
       <div className="vp-overlay">
 
-        {/* ── Volume Sliders ── */}
         <div className={`vol-panel${mounted ? " mounted" : ""}`}>
           <div className="vol-panel-title">VOLUME</div>
 
@@ -344,7 +341,8 @@ export default function VolumePage({ onBack }) {
             label="SFX"
             level={sfxLevel}
             isFocused={focus === 0}
-            onClick={() => { sounds.itemNavigation(); setFocus(0) }}
+            onFocus={() => { sounds.itemNavigation(); setFocus(0) }}
+            onSetLevel={setSfx}
           />
 
           <div className="vol-divider" />
@@ -353,7 +351,8 @@ export default function VolumePage({ onBack }) {
             label="MUSIC"
             level={musicLevel}
             isFocused={focus === 1}
-            onClick={() => { sounds.itemNavigation(); setFocus(1) }}
+            onFocus={() => { sounds.itemNavigation(); setFocus(1) }}
+            onSetLevel={setMusic}
           />
 
           <div className="vol-hint">
@@ -363,7 +362,6 @@ export default function VolumePage({ onBack }) {
           </div>
         </div>
 
-        {/* ── Radio ── */}
         <div className={`music-panel${mounted ? " mounted" : ""}`}>
           <div className="music-panel-title">RADIO</div>
 
@@ -374,11 +372,7 @@ export default function VolumePage({ onBack }) {
               return (
                 <div
                   key={i}
-                  className={[
-                    "music-track-row",
-                    isPlaying ? "active" : "",
-                    isKbd     ? "kbd"    : "",
-                  ].join(" ").trim()}
+                  className={["music-track-row", isPlaying ? "active" : "", isKbd ? "kbd" : ""].join(" ").trim()}
                   onClick={() => { sounds.goIntoTab(); musicSetTrack(i) }}
                 >
                   <span className="music-track-num">
@@ -390,11 +384,7 @@ export default function VolumePage({ onBack }) {
               )
             })}
             <div
-              className={[
-                "music-track-row music-shuffle-row",
-                shuffle                               ? "active" : "",
-                focus === 2 && radioIdx === SONGS.length ? "kbd" : "",
-              ].join(" ").trim()}
+              className={["music-track-row music-shuffle-row", shuffle ? "active" : "", focus === 2 && radioIdx === SONGS.length ? "kbd" : ""].join(" ").trim()}
               onClick={() => { sounds.goIntoTab(); musicToggleShuffle() }}
             >
               <span className="music-track-num">⇌</span>
@@ -403,13 +393,8 @@ export default function VolumePage({ onBack }) {
             </div>
           </div>
 
-          {/* Progress Bar */}
           <div className="music-progress-wrap">
-            <div
-              className="music-progress-bar"
-              ref={progressBarRef}
-              onClick={handleProgressClick}
-            >
+            <div className="music-progress-bar" ref={progressBarRef} onClick={handleProgressClick}>
               <div className="music-progress-fill" style={{ width: `${progressPct}%` }} />
             </div>
             <div className="music-progress-times">
@@ -418,7 +403,6 @@ export default function VolumePage({ onBack }) {
             </div>
           </div>
 
-          {/* Playback Controls */}
           <div className="music-controls">
             <button className="music-btn" onClick={() => { sounds.itemNavigation(); musicPrev() }}>◄◄</button>
             <button className="music-btn music-play-btn" onClick={() => { sounds.goIntoTab(); musicPlayPause() }}>

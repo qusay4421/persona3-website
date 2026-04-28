@@ -3,7 +3,6 @@ import { Routes, Route, useNavigate } from 'react-router-dom'
 import main1 from './assets/main1.mp4'
 import main2 from './assets/main2.mp4'
 import main2loop from './assets/main2loop.mp4'
-import main3 from './assets/main3.mp4'
 import P3Menu from './P3Menu'
 import ResumePage from './ResumePage'
 import Socials from './Socials'
@@ -11,9 +10,37 @@ import AboutMe from './AboutMe'
 import VolumePage from './VolumePage'
 import SeamlessVideo from './SeamlessVideo'
 import CrossfadeVideos from './CrossfadeVideos'
-import RippleTransition from './RippleTransition'
-import { sounds } from './sounds'
+import DonutTransition from './DonutTransition'
+import MusicBars from './MusicBars'
+import { sounds, musicPlayPause, musicNext, musicPrev } from './sounds'
 import './App.css'
+
+const DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
+function Clock() {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(id)
+  }, [])
+  const pad = (n) => String(n).padStart(2, '0')
+  return (
+    <div style={{
+      position: 'absolute', top: 16, right: 16, zIndex: 20,
+      fontFamily: "'Anton', sans-serif", color: '#fff',
+      textAlign: 'right', pointerEvents: 'none',
+      background: 'rgba(0,0,0,0.45)', borderRadius: 4,
+      padding: '6px 12px', lineHeight: 1.25,
+      border: '1px solid rgba(255,255,255,0.15)',
+    }}>
+      <div style={{ fontSize: 18, letterSpacing: 3, fontStyle: 'italic' }}>
+        {now.getMonth() + 1}/{now.getDate()}&nbsp;<span style={{ fontSize: 13, letterSpacing: 2 }}>{DAYS[now.getDay()]}</span>
+      </div>
+      <div style={{ fontSize: 13, letterSpacing: 3, opacity: 0.85 }}>
+        {pad(now.getHours())}:{pad(now.getMinutes())}:{pad(now.getSeconds())}
+      </div>
+    </div>
+  )
+}
 
 function IntroScreen({ onEnter }) {
   useEffect(() => {
@@ -25,6 +52,8 @@ function IntroScreen({ onEnter }) {
   return (
     <div id="menu-screen">
       <SeamlessVideo src={main1} />
+      <MusicBars />
+      <Clock />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
         @keyframes intro-blink {
@@ -33,7 +62,7 @@ function IntroScreen({ onEnter }) {
         }
         .intro-enter-btn {
           position: absolute;
-          bottom: 10vh;
+          bottom: calc(10vh + 100px);
           left: 50%;
           transform: translateX(-50%);
           z-index: 20;
@@ -87,30 +116,24 @@ function MenuScreen({ onNavigate, onBack }) {
   )
 }
 
-// Blob covers the screen in RIPPLE_IN_ANIM_MS. Navigate fires at RIPPLE_IN_MS
-// (slightly early — blob already covers all corners at that point due to the 1.18
-// radius margin). Hole opens immediately after in RIPPLE_OUT_MS.
-const RIPPLE_IN_MS      = 800
-const RIPPLE_IN_ANIM_MS = 920
-const RIPPLE_OUT_MS     = 380
-
 export default function App() {
   const [appPhase, setAppPhase] = useState('intro')
-  const navigate = useNavigate()
-  const lastClick = useRef({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
-  const [ripple, setRipple] = useState(null)
+  const navigate   = useNavigate()
+  const lastClick  = useRef({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
   const transiting = useRef(false)
+  const [donutState, setDonutState] = useState(null)
 
   useEffect(() => {
     const onMouseDown = (e) => {
       lastClick.current = { x: e.clientX, y: e.clientY }
     }
-    // Capture phase fires before child keydown handlers so keyboard nav
-    // always ripples from screen center.
     const onKeyDown = (e) => {
       if (e.key === 'Enter' || e.key === 'Escape' || e.key === 'Backspace') {
         lastClick.current = { x: window.innerWidth / 2, y: window.innerHeight / 2 }
       }
+      if (e.code === 'Space')                                { e.preventDefault(); musicPlayPause() }
+      if (e.ctrlKey && e.key === 'ArrowRight') { e.preventDefault(); musicNext() }
+      if (e.ctrlKey && e.key === 'ArrowLeft')  { e.preventDefault(); musicPrev() }
     }
     window.addEventListener('mousedown', onMouseDown)
     window.addEventListener('keydown', onKeyDown, true)
@@ -120,40 +143,60 @@ export default function App() {
     }
   }, [])
 
-  const withRipple = useCallback((navFn) => {
+  const startDonut = useCallback((onDone) => {
     if (transiting.current) return
     transiting.current = true
     const { x, y } = lastClick.current
-    setRipple({ x, y, phase: 'in' })
-    setTimeout(() => {
-      navFn()
-      setRipple({ x, y, phase: 'out' })
-      setTimeout(() => {
-        setRipple(null)
-        transiting.current = false
-      }, RIPPLE_OUT_MS)
-    }, RIPPLE_IN_MS)
+
+    const sourceEl = document.getElementById('menu-screen')
+    const sourceClone = sourceEl ? sourceEl.cloneNode(true) : null
+    if (sourceClone) {
+      sourceClone.querySelectorAll('audio').forEach(a => a.remove())
+      const liveVideos = sourceEl ? [...sourceEl.querySelectorAll('video')] : []
+      sourceClone.querySelectorAll('video').forEach((clonedV, i) => {
+        const liveV = liveVideos[i]
+        try {
+          const canvas = document.createElement('canvas')
+          canvas.width = liveV.videoWidth
+          canvas.height = liveV.videoHeight
+          canvas.getContext('2d').drawImage(liveV, 0, 0)
+          const img = document.createElement('img')
+          img.src = canvas.toDataURL('image/jpeg', 0.85)
+          img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;'
+          clonedV.replaceWith(img)
+        } catch {
+          clonedV.muted = true
+        }
+      })
+    }
+
+    setDonutState({ x, y, sourceClone, onDone })
   }, [])
 
-  const goToPage = useCallback((path) => {
+  const handleDonutComplete = useCallback(() => {
+    setDonutState(null)
+    transiting.current = false
+  }, [])
+
+  const goToPage = useCallback((page) => {
     sounds.goIntoTab()
-    withRipple(() => navigate(path))
-  }, [navigate, withRipple])
+    startDonut(() => navigate(`/${page}`))
+  }, [startDonut, navigate])
 
   const goBack = useCallback(() => {
     sounds.goOutTab()
-    withRipple(() => navigate(-1))
-  }, [navigate, withRipple])
+    startDonut(() => navigate(-1))
+  }, [startDonut, navigate])
 
   const handleEnter = useCallback(() => {
     sounds.goIntoTab()
-    withRipple(() => setAppPhase('menu'))
-  }, [withRipple])
+    startDonut(() => setAppPhase('menu'))
+  }, [startDonut])
 
   const handleBackToIntro = useCallback(() => {
     sounds.goOutTab()
-    withRipple(() => setAppPhase('intro'))
-  }, [withRipple])
+    startDonut(() => setAppPhase('intro'))
+  }, [startDonut])
 
   return (
     <>
@@ -161,7 +204,7 @@ export default function App() {
         ? <IntroScreen onEnter={handleEnter} />
         : (
           <Routes>
-            <Route path="/"        element={<MenuScreen onNavigate={(page) => goToPage(`/${page}`)} onBack={handleBackToIntro} />} />
+            <Route path="/"        element={<MenuScreen onNavigate={goToPage} onBack={handleBackToIntro} />} />
             <Route path="/about"   element={<AboutMe    onBack={goBack} />} />
             <Route path="/resume"  element={<ResumePage src={main2} onBack={goBack} />} />
             <Route path="/socials" element={<Socials    onBack={goBack} />} />
@@ -169,13 +212,13 @@ export default function App() {
           </Routes>
         )
       }
-      {ripple && (
-        <RippleTransition
-          x={ripple.x}
-          y={ripple.y}
-          phase={ripple.phase}
-          inDuration={RIPPLE_IN_ANIM_MS}
-          outDuration={RIPPLE_OUT_MS}
+      {donutState && (
+        <DonutTransition
+          x={donutState.x}
+          y={donutState.y}
+          sourceClone={donutState.sourceClone}
+          onDone={donutState.onDone}
+          onComplete={handleDonutComplete}
         />
       )}
     </>

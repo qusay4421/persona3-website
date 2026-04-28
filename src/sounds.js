@@ -77,11 +77,34 @@ let mPlaying = false
 let mShuffle = false
 let mCb      = null
 
+// ─── Visualizer Analyser ──────────────────────────────────────────────────────
+let _audioCtx  = null
+let _analyser  = null
+let _source    = null
+
+function ensureCtx() {
+  if (_audioCtx) return
+  _audioCtx = new AudioContext()
+  _analyser = _audioCtx.createAnalyser()
+  _analyser.fftSize               = 2048
+  _analyser.smoothingTimeConstant = 0.6
+  _analyser.connect(_audioCtx.destination)
+}
+
+export function getMusicAnalyser() { ensureCtx(); return _analyser }
+export function resumeMusicCtx()   {
+  ensureCtx()
+  if (_audioCtx.state === 'suspended') _audioCtx.resume()
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function setMusicCallback(cb) { mCb = cb }
 function mNotify() { if (mCb) mCb({ idx: mIdx, playing: mPlaying, shuffle: mShuffle }) }
 
 function mLoad(idx) {
   if (mAudio) { mAudio.pause(); mAudio.onended = null }
+  if (_source) { try { _source.disconnect() } catch {} ; _source = null }
+
   mIdx = ((idx % SONGS.length) + SONGS.length) % SONGS.length
   mAudio = new Audio(SONGS[mIdx].src)
   mAudio.volume = musicVolume
@@ -91,6 +114,31 @@ function mLoad(idx) {
       : (mIdx + 1) % SONGS.length
     mLoadPlay(next)
   }
+
+  // Route through analyser so MusicBars can read frequency data
+  ensureCtx()
+  try {
+    _source = _audioCtx.createMediaElementSource(mAudio)
+    _source.connect(_analyser)
+    if (_audioCtx.state === 'suspended') _audioCtx.resume()
+  } catch {}
+}
+
+function updateMediaSession() {
+  if (!('mediaSession' in navigator)) return
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title:  SONGS[mIdx].title,
+    artist: SONGS[mIdx].artist,
+    album:  "Persona 3 Reload",
+  })
+}
+
+// Register handlers once at module load — media keys work from page load onwards
+if ('mediaSession' in navigator) {
+  navigator.mediaSession.setActionHandler('play',          () => musicPlayPause())
+  navigator.mediaSession.setActionHandler('pause',         () => musicPlayPause())
+  navigator.mediaSession.setActionHandler('previoustrack', () => musicPrev())
+  navigator.mediaSession.setActionHandler('nexttrack',     () => musicNext())
 }
 
 function mLoadPlay(idx) {
@@ -98,6 +146,7 @@ function mLoadPlay(idx) {
   mAudio.play().catch(() => {})
   mPlaying = true
   mNotify()
+  updateMediaSession()
 }
 
 export function musicPlayPause() {

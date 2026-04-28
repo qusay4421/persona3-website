@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { sounds } from "./sounds";
 
+// Skip the entrance animation on return visits so the menu doesn't replay
+// its slide-in when remounted after a DonutTransition.
+let hasEverMounted = false;
+
 const ITEMS = [
   { id: "about",   label: "ABOUT ME",      page: "about",   fontSize: 80, offsetX: 0,  offsetY: 0,  skew: -6,  skewY: 10  },
   { id: "resume",  label: "RESUME",        page: "resume",  fontSize: 66, offsetX: 20, offsetY: 8,  skew: -11, skewY: -10 },
@@ -20,7 +24,7 @@ const CLIP_SHAPES = [
 
 export default function P3Menu({ onNavigate }) {
   const [active, setActive] = useState(0);
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(hasEverMounted);
   const [animKey, setAnimKey] = useState(0);
 
   const activate = (idx) => {
@@ -29,7 +33,11 @@ export default function P3Menu({ onNavigate }) {
   };
 
   useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 1000);
+    if (hasEverMounted) return;
+    const t = setTimeout(() => {
+      setMounted(true);
+      hasEverMounted = true;
+    }, 1000);
     return () => clearTimeout(t);
   }, []);
 
