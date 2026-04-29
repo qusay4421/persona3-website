@@ -224,8 +224,8 @@ export default function P3Menu({ onNavigate }) {
 
       <div className="p3-overlay">
         <div className="p3-name-tag">
-          <span>jade's</span>
-          <span>persona</span>
+          <span>Qussai's</span>
+          <span>Persona</span>
         </div>
 
         <nav className="p3-menu">

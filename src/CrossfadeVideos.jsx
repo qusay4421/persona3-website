@@ -1,25 +1,39 @@
 import { useEffect, useRef, useState } from 'react'
 
 export default function CrossfadeVideos({ firstSrc, loopSrc, className = '', style }) {
-  const [phase, setPhase] = useState('first')
+  const [firstDone, setFirstDone] = useState(false)
   const firstRef = useRef(null)
+  const loopRef  = useRef(null)
 
   useEffect(() => {
-    const el = firstRef.current
-    if (!el || phase !== 'first') return
-    const onEnded = () => setPhase('loop')
+    const el     = firstRef.current
+    const loopEl = loopRef.current
+    if (!el || !loopEl) return
+
+    const onEnded = () => setFirstDone(true)
+
+    const onTimeUpdate = () => {
+      if (!el.duration || isNaN(el.duration)) return
+      if (el.duration - el.currentTime <= 0.1 && loopEl.paused) {
+        loopEl.play().catch(() => {})
+      }
+    }
+
     el.addEventListener('ended', onEnded)
-    return () => el.removeEventListener('ended', onEnded)
-  }, [phase, firstSrc])
+    el.addEventListener('timeupdate', onTimeUpdate)
+    return () => {
+      el.removeEventListener('ended', onEnded)
+      el.removeEventListener('timeupdate', onTimeUpdate)
+    }
+  }, [firstSrc])
 
   const base = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }
 
   return (
     <div className={`crossfade-videos ${className}`} style={{ position: 'absolute', inset: 0, ...style }}>
-      {phase === 'first'
-        ? <video ref={firstRef} key="first" src={firstSrc} autoPlay muted playsInline style={base} />
-        : <video key="loop" src={loopSrc} autoPlay loop muted playsInline style={base} />
-      }
+      <video ref={loopRef} src={loopSrc} loop muted playsInline preload="auto" style={{ ...base, zIndex: 1 }} />
+      <video ref={firstRef} src={firstSrc} autoPlay muted playsInline
+        style={{ ...base, zIndex: 2, opacity: firstDone ? 0 : 1 }} />
     </div>
   )
 }

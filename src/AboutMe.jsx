@@ -7,9 +7,9 @@ import bgVideo from "./assets/main3.mp4";
 import icon1 from "./assets/icon1.png";
 import icon2 from "./assets/icon2.png";
 import icon3 from "./assets/icon3.png";
-import mainm from "./assets/mainm.jpeg";
-import mainm2 from "./assets/mainm2.jpeg";
-import mainf from "./assets/mainf.jpeg";
+import mainm from "./assets/mainm.png";
+import mainm2 from "./assets/mainm2.png";
+import mainf from "./assets/mainf.png";
 
 const CHARS = [char1, char2, char3];
 const MAIN_IMAGES = [mainm, mainm2, mainf];
@@ -71,61 +71,104 @@ const ITEMS = [
 ];
 
 export default function AboutMe({ onBack }) {
-  const [active, setActive]   = useState(0);
-  const [mounted, setMounted] = useState(false);
-  const [revealed, setRevealed] = useState(false);
+  const [active,          setActive]         = useState(0);
+  const [displayedActive, setDisplayedActive] = useState(0);
+  const [mounted,         setMounted]         = useState(false);
+  const [revealed,        setRevealed]        = useState(false);
+  const [flashKey,        setFlashKey]        = useState(0);
+  const [exitContent,     setExitContent]     = useState(null);
+  const [exitKey,         setExitKey]         = useState(0);
+  const [exiting,         setExiting]         = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 60);
     return () => clearTimeout(t);
   }, []);
 
+  const startExit = () => {
+    setExiting(true);
+    setTimeout(() => { setRevealed(false); setExiting(false); }, 520);
+  };
+
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === "ArrowUp") { sounds.itemNavigation(); setActive(i => (i - 1 + ITEMS.length) % ITEMS.length); }
-      if (e.key === "ArrowDown") { sounds.itemNavigation(); setActive(i => (i + 1) % ITEMS.length); }
+      if (exiting) return;
+      if (e.key === "ArrowUp") {
+        sounds.itemNavigation();
+        const next = (active - 1 + ITEMS.length) % ITEMS.length;
+        setActive(next);
+        if (revealed) {
+          setExitContent(REVEAL_CONTENT[displayedActive]);
+          setExitKey(k => k + 1);
+          setFlashKey(k => k + 1);
+          setTimeout(() => { setDisplayedActive(next); setExitContent(null); }, 193);
+        } else setDisplayedActive(next);
+      }
+      if (e.key === "ArrowDown") {
+        sounds.itemNavigation();
+        const next = (active + 1) % ITEMS.length;
+        setActive(next);
+        if (revealed) {
+          setExitContent(REVEAL_CONTENT[displayedActive]);
+          setExitKey(k => k + 1);
+          setFlashKey(k => k + 1);
+          setTimeout(() => { setDisplayedActive(next); setExitContent(null); }, 193);
+        } else setDisplayedActive(next);
+      }
       if (e.key === "Enter") setRevealed(true);
       if (e.key === "ArrowRight") setRevealed(true);
       if (e.key === "ArrowLeft") {
-        if (revealed) setRevealed(false);
+        if (revealed) startExit();
         else onBack();
       }
-      if (e.key === "Escape" || e.key === "Backspace") { if (revealed) setRevealed(false); else onBack(); }
+      if (e.key === "Escape" || e.key === "Backspace") { if (revealed) startExit(); else onBack(); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [active, revealed, onBack]);
+  }, [active, revealed, exiting, displayedActive, onBack]);
 
   return (
     <div id="menu-screen">
       <video src={bgVideo} autoPlay loop muted playsInline />
-      {revealed && <div key={`dim-${active}`} className="sc-dim" />}
-      {revealed && (
-        <div key={`panel-${active}`} className={`sc-reveal-panel${mounted ? " mounted" : ""}`}>
-          <div className="sc-reveal-upper-bar">
-            {REVEAL_CONTENT[active].upper.map((line) => (
-              <div className="sc-reveal-upper-line" key={line}>{line}</div>
-            ))}
+      {(revealed || exiting) && <div key={`dim-${active}`} className="sc-dim" />}
+      {(revealed || exiting) && (
+        <div key="panel" className={`sc-reveal-panel${mounted ? " mounted" : ""}${exiting ? " exiting" : ""}`}>
+          {exitContent && (
+            <div key={exitKey} className="sc-text-layer sc-text-layer-exit">
+              <div className="sc-reveal-upper-bar">
+                {exitContent.upper.map((line) => (
+                  <div className="sc-reveal-upper-line" key={line}>{line}</div>
+                ))}
+              </div>
+              <div className="sc-reveal-lower-bar">{exitContent.lower}</div>
+            </div>
+          )}
+          <div key={`content-${displayedActive}`} className={`sc-text-layer${flashKey > 0 ? ' sc-text-layer-enter' : ''}`}>
+            <div className="sc-reveal-upper-bar">
+              {REVEAL_CONTENT[displayedActive].upper.map((line) => (
+                <div className="sc-reveal-upper-line" key={line}>{line}</div>
+              ))}
+            </div>
+            <div className="sc-reveal-lower-bar">{REVEAL_CONTENT[displayedActive].lower}</div>
           </div>
-          <div className="sc-reveal-lower-bar">{REVEAL_CONTENT[active].lower}</div>
         </div>
       )}
-      {revealed && (
+      {(revealed || exiting) && (
         <div key={`nav-${active}`} className="sc-right-nav">
-          <span className="sc-nav-arrow left">◄</span>
-          <span className="sc-nav-btn">LB</span>
-          <span className="sc-nav-dot" />
-          <span className="sc-nav-btn">RB</span>
-          <span className="sc-nav-arrow right">►</span>
+          <span className="sc-nav-arrow left">⮝</span>
+          <span className="sc-nav-btn">U</span>
+          
+          {Array.from({ length: ITEMS.length }).map((_, index) => (/* dot for each item */
+            <span key={index} className="sc-nav-dot" />
+          ))}
+          <span className="sc-nav-btn">D</span>
+          <span className="sc-nav-arrow right">⮟</span>
         </div>
       )}
-      {revealed && (
-        <div key={`portrait-${active}`} className={`sc-main-portrait-shell${mounted ? " mounted" : ""}`}>
-          <img
-            className="sc-main-portrait"
-            src={MAIN_IMAGES[active]}
-            alt=""
-          />
+      {(revealed || exiting) && (
+        <div key="portrait" className={`sc-main-portrait-shell${mounted ? " mounted" : ""}${exiting ? " exiting" : ""}`}>
+          <img className="sc-main-portrait" src={MAIN_IMAGES[displayedActive]} alt="" />
+          {flashKey > 0 && <div key={flashKey} className="sc-portrait-flash" />}
         </div>
       )}
       <style>{`
@@ -149,7 +192,7 @@ export default function AboutMe({ onBack }) {
           inset: 0;
           z-index: 12;
           background: rgba(40, 45, 54, 0.68);
-          pointer-events: none;
+          pointer-events: auto;
           animation: sc-dim-in 0.32s ease-out;
         }
 
@@ -163,72 +206,105 @@ export default function AboutMe({ onBack }) {
         }
 
         @keyframes sc-reveal-bar-in {
-          0% {
-            opacity: 0;
-            transform: translateX(-120px) rotate(-20deg) scaleX(0.72);
-          }
-          60% {
-            opacity: 0.96;
-            transform: translateX(18px) rotate(-20deg) scaleX(1.03);
-          }
-          100% {
-            opacity: 0.92;
-            transform: translateX(0) rotate(-20deg) scaleX(1);
-          }
+          from { opacity: 0; transform: translateY(110vh) rotate(-10deg); }
+          to   { opacity: 1; transform: translateY(0) rotate(-10deg); }
+        }
+
+        @keyframes sc-reveal-bar-out {
+          from { opacity: 1; transform: translateY(0) rotate(-10deg); }
+          to   { opacity: 0; transform: translateY(110vh) rotate(-10deg); }
         }
 
         @keyframes sc-portrait-in {
-          0% {
-            opacity: 0;
-            transform: translateX(78px) skewX(-8deg) scale(0.94);
-            filter: blur(8px);
-          }
-          55% {
-            opacity: 0.9;
-            transform: translateX(-8px) skewX(-8deg) scale(1.015);
-            filter: blur(0);
-          }
-          100% {
-            opacity: 0.96;
-            transform: translateX(0) skewX(-8deg) scale(1);
-            filter: blur(0);
-          }
+          from { opacity: 0; transform: translateY(-110%); }
+          to   { opacity: 1; transform: translateY(0); }
         }
 
-        @keyframes sc-arrow-left {
-          0%, 100% { transform: translateX(0); opacity: 1; }
-          50% { transform: translateX(-5px); opacity: 0.4; }
+        @keyframes sc-portrait-out {
+          from { opacity: 1; transform: translateY(0); }
+          to   { opacity: 0; transform: translateY(-110%); }
         }
 
-        @keyframes sc-arrow-right {
-          0%, 100% { transform: translateX(0); opacity: 1; }
-          50% { transform: translateX(5px); opacity: 0.4; }
+        @keyframes sc-flash-wipe {
+          0%   { clip-path: polygon(0% 0%, 100% 0%, 100%   0%, 0%   0%); }
+          40%  { clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%); }
+          60%  { clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%); }
+          100% { clip-path: polygon(0% 100%, 100% 100%, 100% 100%, 0% 100%); }
+        }
+        .sc-portrait-flash {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(to bottom, #767676 0%, #ffffff 100%);
+          z-index: 5;
+          pointer-events: none;
+          animation: sc-flash-wipe 0.55s ease forwards;
+        }
+
+        .sc-text-layer {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+        }
+        @keyframes sc-text-exit-anim {
+          from { transform: translateX(0%); }
+          to   { transform: translateX(80%); }
+        }
+        @keyframes sc-text-enter-anim {
+          from { transform: translateX(-45%); opacity: 0.2; }
+          to   { transform: translateX(0%);   opacity: 1; }
+        }
+        .sc-text-layer-exit {
+          animation: sc-text-exit-anim 0.2s ease-in forwards;
+        }
+        .sc-text-layer-enter {
+          animation: sc-text-enter-anim 0.35s cubic-bezier(0.22,1,0.36,1) forwards;
+        }
+
+        @keyframes sc-arrow-up {
+          0%, 100% { transform: translateY(0); opacity: 1; }
+          50% { transform: translateY(-5px); opacity: 0.4; }
+        }
+
+        @keyframes sc-arrow-down {
+          0%, 100% { transform: translateY(0); opacity: 1; }
+          50% { transform: translateY(5px); opacity: 0.4; }
         }
 
         .sc-main-portrait-shell {
           position: absolute;
+          left: 52%;
           top: 0;
-          right: -3vw;
+          width: 48%;
+          height: 100%;
           z-index: 13;
-          pointer-events: none;
-          width: 43vw;
-          height: 100vh;
           overflow: hidden;
+          pointer-events: none;
+          background: #dcdcdc;
+          clip-path: polygon(
+            23%  0%,
+            100%  0%,
+            100% 50%,
+             63% 100%,
+              6% 100%,
+              6%  78%,
+              0%  75%
+          );
           opacity: 0;
-          transform: translateX(24px) skewX(-8deg) scale(0.98);
-          transition: opacity 0.35s ease, transform 0.35s ease;
+          transition: opacity 0.35s ease;
         }
         .sc-main-portrait-shell.mounted {
-          opacity: 0.96;
-          transform: translateX(0) skewX(-8deg) scale(1);
-          animation: sc-portrait-in 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+          opacity: 1;
+          animation: sc-portrait-in 0.6s cubic-bezier(0.22,1,0.36,1);
+        }
+        .sc-main-portrait-shell.exiting {
+          animation: sc-portrait-out 0.5s cubic-bezier(0.22,1,0.36,1) forwards;
         }
 
         .sc-reveal-panel {
           position: absolute;
-          top: 44vh;
+          top: 30vh;
           left: -6vw;
-          width: 88vw;
+          width: 200vw;
           height: 60vh;
           z-index: 12;
           pointer-events: none;
@@ -240,14 +316,17 @@ export default function AboutMe({ onBack }) {
             18px 0 0 rgba(215, 13, 44, 0.82),
             28px 0 0 rgba(255,255,255,0.26);
           opacity: 0;
-          transform: translateX(-40px) rotate(-20deg);
+          transform: rotate(-10deg);
           transform-origin: left bottom;
-          transition: opacity 0.3s ease, transform 0.35s ease;
+          transition: opacity 0.3s ease;
         }
         .sc-reveal-panel.mounted {
-          opacity: 0.92;
-          transform: translateX(0) rotate(-20deg);
-          animation: sc-reveal-bar-in 0.46s cubic-bezier(0.22, 1, 0.36, 1);
+          opacity: 1;
+          transform: rotate(-10deg);
+          animation: sc-reveal-bar-in 0.6s cubic-bezier(0.22,1,0.36,1);
+        }
+        .sc-reveal-panel.exiting {
+          animation: sc-reveal-bar-out 0.5s cubic-bezier(0.22,1,0.36,1) forwards;
         }
         .sc-reveal-panel::before {
           content: "";
@@ -270,11 +349,12 @@ export default function AboutMe({ onBack }) {
           box-shadow: 0 0 0 1px rgba(255,255,255,0.06);
           display: flex;
           flex-direction: column;
-          align-items: center;
+          align-items: flex-start;
           justify-content: center;
           gap: 10px;
           color: #fff;
-          text-align: center;
+          text-align: left;
+          padding-left: 300px;
         }
         .sc-reveal-upper-line {
           font-family: 'Montserrat', sans-serif;
@@ -286,8 +366,8 @@ export default function AboutMe({ onBack }) {
         .sc-reveal-lower-bar {
           position: absolute;
           top: 58%;
-          right: 0;
-          width: 48%;
+          left: 0;
+          width: 100%;
           height: 20%;
           background: rgba(0, 0, 0, 0.92);
           clip-path: polygon(0 0, 100% 0, calc(100% - 22px) 100%, 0 100%);
@@ -301,7 +381,7 @@ export default function AboutMe({ onBack }) {
           font-size: 22px;
           letter-spacing: 0.4px;
           text-transform: lowercase;
-          padding-left: 22px;
+          padding-left: 300px;
         }
 
         @keyframes sc-right-nav-pop {
@@ -318,7 +398,7 @@ export default function AboutMe({ onBack }) {
           gap: 6px;
           pointer-events: none;
           z-index: 14;
-          transform: translateX(-40px) rotate(-20deg);
+          transform: translateX(-40px) rotate(-10deg);
           transform-origin: left bottom;
           animation: sc-right-nav-pop 0.38s cubic-bezier(0.22,1,0.36,1) both;
         }
@@ -350,16 +430,14 @@ export default function AboutMe({ onBack }) {
           display: inline-block;
           user-select: none;
         }
-        .sc-right-nav .sc-nav-arrow.left  { animation: sc-arrow-left  0.8s ease-in-out infinite; }
-        .sc-right-nav .sc-nav-arrow.right { animation: sc-arrow-right 0.8s ease-in-out infinite; }
+        .sc-right-nav .sc-nav-arrow.left  { animation: sc-arrow-up  0.8s ease-in-out infinite; }
+        .sc-right-nav .sc-nav-arrow.right { animation: sc-arrow-down 0.8s ease-in-out infinite; }
 
         .sc-main-portrait {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          object-position: top right;
-          transform: skewX(8deg) scale(1.08);
-          transform-origin: top right;
+          object-position: center;
         }
 
         /* ── Each bar ── */
@@ -617,6 +695,14 @@ export default function AboutMe({ onBack }) {
             className={`sc-bar-outer${active === i ? " active" : ""}${mounted ? " mounted" : ""}`}
             onClick={() => {
               sounds.goIntoTab();
+              if (revealed && active !== i) {
+                setExitContent(REVEAL_CONTENT[displayedActive]);
+                setExitKey(k => k + 1);
+                setFlashKey(k => k + 1);
+                setTimeout(() => { setDisplayedActive(i); setExitContent(null); }, 193);
+              } else {
+                setDisplayedActive(i);
+              }
               setActive(i);
               setRevealed(true);
             }}

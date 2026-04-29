@@ -330,6 +330,7 @@ export default function VolumePage({ onBack }) {
           font-family: 'Anton', sans-serif; font-size: 11px; letter-spacing: 2px;
           color: rgba(255,255,255,0.2); display: flex; gap: 14px; margin-top: 6px;
         }
+
       `}</style>
 
       <div className="vp-overlay">

@@ -6,7 +6,7 @@ const GAP             = 3
 const LOWER_FREQ      = 50
 const UPPER_FREQ      = 10000
 const NOISE_REDUCTION = 0.77
-const SENSITIVITY     = 1.5   // fixed amplification before volume scaling
+const SENSITIVITY     = 1.5
 
 const BAR_AMP = Array.from({ length: BAR_COUNT }, () => 0.5 + Math.random() * 0.5)
 
@@ -50,7 +50,6 @@ export default function MusicBars() {
       analyser.getByteFrequencyData(dataArray)
 
       // Square-root curve: boosts low volumes without affecting the top end
-      // vol 1 → 0.32×, vol 4 → 0.63×, vol 10 → 1.0× (unchanged)
       const volScale = Math.sqrt(getMusicVolume() / 10)
 
       const ctx = canvas.getContext('2d')
