@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { sounds } from "./sounds";
+import { main3 as bgVideo } from "./videoUrls";
 
 // Edit this list to add, remove, or reorder projects.
 const PROJECTS = [
@@ -56,7 +57,8 @@ export default function SideProjects({ onBack }) {
   }, [active, onBack]);
 
   return (
-    <div id="menu-screen" style={{ background: "#07070c" }}>
+    <div id="menu-screen">
+      <video src={bgVideo} autoPlay loop muted playsInline />
       <style>{`
         .sp-root {
           position: absolute;

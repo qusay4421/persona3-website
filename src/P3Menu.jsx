@@ -45,7 +45,7 @@ export default function P3Menu({ onNavigate }) {
     const onKey = (e) => {
       if (e.key === "ArrowUp")   { sounds.itemNavigation(); activate((active - 1 + ITEMS.length) % ITEMS.length); }
       if (e.key === "ArrowDown") { sounds.itemNavigation(); activate((active + 1) % ITEMS.length); }
-      if (e.key === "Enter")     { onNavigate?.(ITEMS[active].page); }
+      if (e.key === "Enter")     { const it = ITEMS[active]; if (it.external) { window.open(it.external, "_blank"); } else { onNavigate?.(it.page); } }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -247,7 +247,7 @@ export default function P3Menu({ onNavigate }) {
                   marginTop: item.offsetY,
                   transitionDelay: mounted ? `${i * 80}ms` : "0ms",
                 }}
-                onClick={(e) => { e.preventDefault(); onNavigate?.(item.page); }}
+                onClick={(e) => { e.preventDefault(); if (item.external) { window.open(item.external, "_blank"); } else { onNavigate?.(item.page); } }}
                 onMouseEnter={() => { sounds.itemNavigation(); activate(i); }}
                 aria-current={isActive ? "page" : undefined}
               >

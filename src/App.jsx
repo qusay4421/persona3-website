@@ -1,8 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
-import main1 from './assets/main1.mp4'
-import main2 from './assets/main2.mp4'
-import main2loop from './assets/main2loop.mp4'
+import { main1, main2, main2loop } from './videoUrls'
 import P3Menu from './P3Menu'
 import ResumePage from './ResumePage'
 import Socials from './Socials'
@@ -210,6 +208,8 @@ export default function App() {
             <Route path="/resume"  element={<ResumePage src={main2} onBack={goBack} />} />
             <Route path="/socials" element={<Socials    onBack={goBack} />} />
             <Route path="/volume"  element={<VolumePage onBack={goBack} />} />
+            <Route path="/volume"  element={<VolumePage onBack={goBack} />} />
+            <Route path="/sideproj" element={<SideProjects onBack={goBack} />} />
           </Routes>
         )
       }

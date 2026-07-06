@@ -4,7 +4,7 @@ import {
   SONGS, getMusicState, setMusicCallback, getMusicProgress, musicSeek,
   musicPlayPause, musicNext, musicPrev, musicSetTrack, musicToggleShuffle,
 } from "./sounds"
-import bgVideo from "./assets/main3.mp4"
+import { main3 as bgVideo } from "./videoUrls";
 
 const RADIO_TOTAL = SONGS.length + 1
 
